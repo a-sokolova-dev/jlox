@@ -98,8 +98,9 @@ class Scanner {
             // A little special handling because comments begin with a slash too.
             case '/':
                 if (match('/')) {
-                    // A comment goes until the end of the line.
-                    while (peek() != '\n' && !isAtEnd()) advance();
+                    skipLineComment();
+                } else if (match('*')){
+                    skipBlockComment();
                 } else {
                     addToken(SLASH);
                 }
@@ -161,6 +162,42 @@ class Scanner {
         // Trim the surrounding quotes.
         String value = source.substring(start + 1, current - 1);
         addToken(STRING, value);
+    }
+
+    private void skipLineComment() {
+        while (peek() != '\n' && !isAtEnd()) advance();
+    }
+
+    private void skipBlockComment() {
+        int nesting = 1;
+
+        while (nesting > 0){
+            if (isAtEnd()) {
+                Lox.error(line, "Unterminated string.");
+                return;
+            }
+
+            // Opening a new nested block comment.
+            if (peek() == '/' && peekNext() == '*')
+            {
+                advance();
+                advance();
+                nesting++;
+                continue;
+            }
+
+            // Closing a block comment.
+            if (peek() == '*' && peekNext() == '/')
+            {
+                advance();
+                advance();
+                nesting--;
+                continue;
+            }
+
+            // Skipping regular comment character.
+            advance();
+        }
     }
 
     private boolean match(char expected) {
